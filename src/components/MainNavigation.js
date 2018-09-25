@@ -33,7 +33,8 @@ export class Navigation extends Component {
 		return (
         <NavBar>
   				<NavTab to="/" exact>Home</NavTab>
-          <NavTab to="/search">Search</NavTab>
+					<NavTab to="/med">Med</NavTab>
+					<NavTab to="/search">Search</NavTab>
 
 					{
 						this.props.openedPatients ? this.props.openedPatients.map( (patient) =>

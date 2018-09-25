@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import MainNavigation from './components/MainNavigation';
 import Patient from './components/Patient';
 import Search from './components/Search';
+import MedPage from './components/MedPage';
 import configureStore, { history } from './store';
 import { ConnectedRouter } from 'connected-react-router'
 import styled from 'styled-components'
@@ -46,6 +47,7 @@ class App extends Component {
               <ContentContainer>
               <Route exact path='/' component={Home} />
               <Route path='/search' component={Search} />
+              <Route path='/med' component={MedPage} />
               <Route path='/patient/:patientId' component={Patient} />
               </ContentContainer>
             </AppFrame>
