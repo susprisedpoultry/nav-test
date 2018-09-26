@@ -16,17 +16,38 @@ const orallyLabel = {
 
 const quantityWithRange = {
 
-	key : "quantity1",
-	type : "field",
+	key : "quantityType",
+	type: "hidden",
 	values : [
 		{
-			value: "once",
-			label: "once",
+			value : "simple",
+			label : "simple",
+			pattern : [
+				{
+					key : "quantity1",
+					type : "field",
+				}
+			]
 		},
 		{
-			value: "daily",
-			label: "daily",
-		}
+			value : "range",
+			label : "range",
+			pattern : [
+				{
+					key : "quantity1",
+					type : "field",
+				},
+				{
+					key : "quantityTo",
+					type : "label",
+					label : "to"
+				},
+				{
+					key : "quantity2",
+					type : "field",
+				},
+			]
+		},
 	]
 }
 
@@ -102,7 +123,9 @@ export default class MedPage extends Component {
 		this.state = {};
     this.state.values = {
       verb: "take",
-      quantity1: "",
+			quantityType: "simple",
+			quantity1: "",
+			quantity2: "",
 			frequency: "once",
     };
 

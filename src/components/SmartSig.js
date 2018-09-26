@@ -30,12 +30,14 @@ class LabelField extends Component {
 }
 
 class SectionOptions extends Component {
+
+
 	render() {
 		return (
 
 			<ul>
 				{
-					this.props.section.values ? this.props.section.values.map( (value) => <li key={value.value} > {value.label}</li>) : "	"
+					this.props.options ? this.props.options.map( (value, index) => <li key={"option" + index} > {value}</li>) : "	"
 				}
 			</ul>
 		);
@@ -91,6 +93,46 @@ export default class SmartSig extends Component {
 		return null;
 	}
 
+	renderSectionToText(section) {
+
+		switch (section.type) {
+
+			case "option":
+			case "field":
+
+				return (this.props.values[section.key] ? this.props.values[section.key] : "[]" );
+
+			case "fixed":
+
+				return (section.values[0].label);
+
+			case "label":
+				return (section.label);
+
+			case "hidden":
+			default:
+				return "";
+		}
+	}
+
+	renderPhraseToText(phrase) {
+
+		var phraseToText = "";
+		phrase.map((section) => {
+				const sectionText = this.renderSectionToText(section);
+
+				if (sectionText.length > 0) {
+
+					if (phraseToText.length > 0)
+						phraseToText += " ";
+
+					phraseToText += sectionText;
+				}
+			});
+
+		return phraseToText;
+	}
+
 	renderSection(section) {
 
 		let sectionOutput = [];
@@ -122,24 +164,18 @@ export default class SmartSig extends Component {
 										 onFocus={ this.onFocusField.bind(this, section) }
 							 	  onChange={ this.onChangeField.bind(this, section) }></input>);
 				break;
+			case "hidden":
 			default:
 				break;
-		}
-
-		const matchingPattern = this.getPattern(section);
-
-		if (matchingPattern) {
-
-				sectionOutput.push(this.renderPattern(matchingPattern));
 		}
 
 		return (sectionOutput);
 
 	}
 
-	renderPattern(pattern) {
+	renderPhrase(phrase) {
 
-		return pattern.map( (section) => this.renderSection(section) );
+		return phrase.map( (section) => this.renderSection(section) );
 	}
 
 	matchPattern() {
@@ -152,14 +188,89 @@ export default class SmartSig extends Component {
 		return this.props.pattern[0];
 	}
 
-	buildAutocomplete(pattern) {
+	findInPattern(pattern, pivotSection) {
 
+		pattern.map( (section) => {
 
+			if (section.key === pivotSection.key)
+				return section;
 
+			const matchingPattern = this.getPattern(section);
+
+			if (matchingPattern) {
+
+					const found = this.findInPattern(matchingPattern, pivotSection);
+
+					if (found)
+ 						return found;
+			}
+
+		});
+
+		return null;
 	}
 
-	buildSection(section, level) {
+	buildAutocomplete(pivotSection) {
 
+		const autoComplete = [];
+
+		if (pivotSection.values) {
+			pivotSection.values.map( (value) => {
+
+				var curSection = { ...pivotSection };
+				let phrase     = [];
+
+				curSection.values = [ value ];
+				curSection.type   = curSection.type === "hidden" ? "hidden" : "fixed";
+
+				phrase.push(curSection);
+
+				if (value.pattern)
+					phrase = phrase.concat(this.buildPhrase(value.pattern));
+
+				autoComplete.push(this.renderPhraseToText(phrase));
+			});
+		}
+
+		return autoComplete;
+	}
+
+	findSection(phrase, key) {
+
+		if (key)
+			return (phrase.find( (phraseSection) => { return (phraseSection.key === key) } ));
+
+		return null;
+	}
+
+	sectionHasPatterns(section) {
+
+		var hasPatterns = false;
+
+		if (section.values) {
+
+			section.values.map( (value) => { hasPatterns = hasPatterns || (typeof value.pattern !== 'undefined')} );
+		}
+
+		return hasPatterns;
+	}
+
+	getPivotSection(phrase) {
+
+		if (this.state.focusSection) {
+
+			const phraseFocusSection = this.findSection(phrase, this.state.focusSection.key);
+
+			if (this.sectionHasPatterns(phraseFocusSection))
+				return phraseFocusSection;
+
+			if (phraseFocusSection.pickerKey)
+				return (this.findSection(phrase, phraseFocusSection.pickerKey));
+
+			return phraseFocusSection;
+		}
+
+		return null;
 	}
 
 	buildPhrase(pattern, pickerKey = null) {
@@ -178,7 +289,7 @@ export default class SmartSig extends Component {
 
 			if (matchingPattern) {
 
-					phrase.push(this.buildPhrase(matchingPattern, matchingPattern.key));
+					phrase = phrase.concat(this.buildPhrase(matchingPattern, section.key));
 			}
 
 		});
@@ -188,18 +299,21 @@ export default class SmartSig extends Component {
 
 	render() {
 
+		const phrase = this.buildPhrase(this.props.pattern);
+
 		let output = [];
 
-		output.push(this.renderPattern(this.props.pattern) );
+		output.push(this.renderPhrase(phrase) );
 
-		if (this.state.focusSection) {
+		const pivotSection = this.getPivotSection(phrase);
 
-				const autocomplete = this.buildAutocomplete(this.props.pattern);
+		if (pivotSection) {
 
+				const autocomplete = this.buildAutocomplete(pivotSection);
 
-				output.push(<Popup key={this.state.focusSection.key + "popup"}>
-											<div>{this.state.focusSection.key}</div>
-											<SectionOptions section={this.state.focusSection} />
+				output.push(<Popup key={pivotSection.key + "popup"}>
+											<div>{pivotSection.key}</div>
+											<SectionOptions options={autocomplete} />
 
 										</Popup>);
 		}
