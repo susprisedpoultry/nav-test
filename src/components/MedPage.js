@@ -14,10 +14,17 @@ const orallyLabel = {
 		label : "orally"
 }
 
+const tabletLabel = {
+		key : "tabletLabel",
+		type : "label",
+		label : "tablet"
+}
+
 const quantityWithRange = {
 
 	key : "quantityType",
 	type: "hidden",
+	label: "Quantity",
 	values : [
 		{
 			value : "simple",
@@ -55,6 +62,7 @@ const frequency = {
 
 		key : "frequency",
 		type : "option",
+		label: "Frequency",
 		values : [
 			{
 				value: "once",
@@ -104,12 +112,13 @@ const pattern = [
 
 	{
 		key : "verb",
+		label : "verb",
 		type : "option",
 		values : [
 			{
 				value: "take",
 				label: "take",
-				pattern: [ quantityWithRange, frequency, orallyLabel, duration]
+				pattern: [ quantityWithRange, tabletLabel, orallyLabel, frequency	]
 			}
 		]
 	}
@@ -126,7 +135,10 @@ export default class MedPage extends Component {
 			quantityType: "simple",
 			quantity1: "",
 			quantity2: "",
-			frequency: "once",
+			frequency: "daily",
+			frequency1: "",
+			frequency2: "",
+			frequencyUnit: "",
     };
 
 		this.onValueChange = this.onValueChange.bind(this);
