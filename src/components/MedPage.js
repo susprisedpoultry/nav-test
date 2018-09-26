@@ -1,172 +1,46 @@
 import React, { Component } from 'react';
 
-import SmartSig from './SmartSig';
+import SmartSig, { TYPE_NUMERIC, TYPE_STATIC } from './SmartSig';
 
 // verb quantity1 [to quantity2] form frequency [for duration units]
 
+const quantity  		 = SmartSig.Field( "quantity",  TYPE_NUMERIC);
+const quantity2      = SmartSig.Field( "quantity2", TYPE_NUMERIC);
+const form           = SmartSig.Field( "form",      TYPE_STATIC)
+const frequencyStart = SmartSig.Field( "frequencyStart",     TYPE_NUMERIC);
+const frequencyEnd   = SmartSig.Field( "frequencyEnd",     TYPE_NUMERIC);
+const frequencyUnit  = SmartSig.Field( "frequencyUnit", [
+																								[ "hours" ],
+																								[ "days" ],
+																							]);
+const frequency 		 = SmartSig.Field( "frequencyType", [
+																							 	[ "once" ],
+																								[ "daily" ],
+																								[ "twice a day" ],
+																								[ "three times a day" ],
+																								[ "every", frequencyStart, "to", frequencyEnd, frequencyUnit ],
+																							]);
+const duration       = SmartSig.Field( "duration",     TYPE_NUMERIC);
+const durationUnit   = SmartSig.Field( "durationUnit", [
+																								[ "hours" ],
+																								[ "days" ],
+																							]);
 
-const duration = {
-		key : "durationType",
-		label : "Duration",
-		type : "option",
-		values : [
-			{
-				value: "for",
-				label: "for",
-				pattern: [
-					{
-						key : "duration",
-						type : "field",
-					},
-					{
-						key: "durationUnit",
-						type: "option",
-						values : [
-							{
-								value: "days",
-								label: "days",
-							},
-							{
-								value: "hours",
-								label: "hours",
-							}
-						]
-					}
-				]
-			}
-		]
-}
 
-const orallyLabel = {
-		key : "orallyLabel",
-		type : "label",
-		label : "orally"
-}
-
-const tabletLabel = {
-		key : "tabletLabel",
-		type : "label",
-		label : "tablet"
-}
-
-const quantityWithRange = {
-
-	key : "quantityType",
-	type: "hidden",
-	label: "Quantity",
-	values : [
-		{
-			value : "simple",
-			label : "simple",
-			pattern : [
-				{
-					key : "quantity1",
-					type : "field",
-				}
-			]
-		},
-		{
-			value : "range",
-			label : "range",
-			pattern : [
-				{
-					key : "quantity1",
-					type : "field",
-				},
-				{
-					key : "quantityTo",
-					type : "label",
-					label : "to"
-				},
-				{
-					key : "quantity2",
-					type : "field",
-				},
-			]
-		},
-	]
-}
-
-const frequency = {
-
-		key : "frequency",
-		type : "option",
-		label: "Frequency",
-		values : [
-			{
-				value: "once",
-				label: "once",
-			},
-			{
-				value: "daily",
-				label: "daily",
-			},
-			{
-				value: "every",
-				label: "every",
-				pattern: [
-					{
-						key: "frequency1",
-						type: "field"
-					},
-					{
-						key: "frequencyto",
-						type: "label",
-						label: "to"
-					},
-					{
-						key: "frequency2",
-						type: "field"
-					},
-					{
-						key: "frequencyUnit",
-						type: "option",
-						values : [
-							{
-								value: "days",
-								label: "days",
-							},
-							{
-								value: "hours",
-								label: "hours",
-							}
-						]
-					},
-				]
-			}
-		]
-}
-
-const pattern = [
-
-	{
-		key : "verb",
-		label : "verb",
-		type : "option",
-		values : [
-			{
-				value: "take",
-				label: "take",
-				pattern: [ quantityWithRange, tabletLabel, orallyLabel, frequency, duration	]
-			}
-		]
-	}
-]
-
+const pattern = SmartSig.Pattern([ "Take", quantity, SmartSig.Optional([ "to", quantity2 ]), form, frequency, SmartSig.Optional(["for", duration, durationUnit])]);
 
 export default class MedPage extends Component {
 
 	constructor(props) {
     super(props);
 		this.state = {};
-    this.state.values = {
-      verb: "take",
-			quantityType: "simple",
-			quantity1: "",
+    this.state.sigValues = {
+			quantity: "",
 			quantity2: "",
-			frequency: "daily",
-			frequency1: "",
-			frequency2: "",
+			form: "tablet",
+			frequencyType: "",
+			frequencyStart: "",
+			frequencyEnd: "",
 			frequencyUnit: "",
 			durationType: "",
 			duration : "",
@@ -185,7 +59,7 @@ export default class MedPage extends Component {
 		this.setState((state, props) => {
 
 					var newState = {...state};
-					newState.values[label] = newValue;
+					newState.sigValues[label] = newValue;
 				  return newState;
 				});
 	}
@@ -198,7 +72,7 @@ export default class MedPage extends Component {
       <h1>This is a Med</h1>
 
 			<form>
-				<SmartSig values={this.state.values} pattern={pattern} onValueChange={this.onValueChange} />
+				<SmartSig values={this.state.sigValues} pattern={pattern} onValueChange={this.onValueChange} />
 			</form>
     </div>
 		);
