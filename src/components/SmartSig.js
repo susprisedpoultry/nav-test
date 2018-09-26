@@ -137,7 +137,6 @@ export default class SmartSig extends Component {
 	}
 
 	onBlurField(section, event) {
-		console.log("onBlurField", section, event);
 
 		if ( (!this._ignoreBlur) &&
 		     (this.state.focusSection.key === section.key) )

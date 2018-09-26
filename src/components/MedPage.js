@@ -2,6 +2,9 @@ import React, { Component } from 'react';
 
 import SmartSig from './SmartSig';
 
+// verb quantity1 [to quantity2] form frequency [for duration units]
+
+
 const duration = {
 		key : "durationType",
 		label : "Duration",
