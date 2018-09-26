@@ -3,9 +3,35 @@ import React, { Component } from 'react';
 import SmartSig from './SmartSig';
 
 const duration = {
-		key : "duration",
-		type : "label",
-		label : "duration"
+		key : "durationType",
+		label : "Duration",
+		type : "option",
+		values : [
+			{
+				value: "for",
+				label: "for",
+				pattern: [
+					{
+						key : "duration",
+						type : "field",
+					},
+					{
+						key: "durationUnit",
+						type: "option",
+						values : [
+							{
+								value: "days",
+								label: "days",
+							},
+							{
+								value: "hours",
+								label: "hours",
+							}
+						]
+					}
+				]
+			}
+		]
 }
 
 const orallyLabel = {
@@ -118,7 +144,7 @@ const pattern = [
 			{
 				value: "take",
 				label: "take",
-				pattern: [ quantityWithRange, tabletLabel, orallyLabel, frequency	]
+				pattern: [ quantityWithRange, tabletLabel, orallyLabel, frequency, duration	]
 			}
 		]
 	}
@@ -139,6 +165,9 @@ export default class MedPage extends Component {
 			frequency1: "",
 			frequency2: "",
 			frequencyUnit: "",
+			durationType: "",
+			duration : "",
+			durationUnit : "",
     };
 
 		this.onValueChange = this.onValueChange.bind(this);

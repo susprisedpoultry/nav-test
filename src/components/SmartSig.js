@@ -177,10 +177,10 @@ export default class SmartSig extends Component {
     },
   }
 
-	getPattern(section) {
+	static getMatchingPattern(section, values) {
 
 		var matchingValue = (section.values ?
-												  section.values.find( (item) => { return (item.value === this.props.values[section.key]) } )
+												  section.values.find( (item) => { return (item.value === values[section.key]) } )
 												: null);
 
 
@@ -192,14 +192,17 @@ export default class SmartSig extends Component {
 		return null;
 	}
 
-	renderSectionToText(section) {
+	renderSectionToText(section, values) {
 
 		switch (section.type) {
 
 			case "option":
 			case "field":
 
-				return (this.props.values[section.key] ? this.props.values[section.key] : "[]" );
+				return ( ( (typeof values[section.key] !== 'undefined') &&
+								   (values[section.key].length > 0) ) ?
+				         values[section.key] :
+								 "[]" );
 
 			case "fixed":
 
@@ -214,13 +217,15 @@ export default class SmartSig extends Component {
 		}
 	}
 
-	renderPhraseToText(phrase) {
+	renderPhraseToText(phrase, values) {
 
-		return phrase.map((section) => this.renderSectionToText(section))
-				  			 .reduce( (phraseToText, sectionText) => (
-									 																			   (sectionText.length > 0 && (phraseToText.length > 0) ) ?
-								 																				   phraseToText + " " + sectionText :
-																													 phraseToText));
+		return phrase.map((section) => this.renderSectionToText(section, values))
+				  			 .reduce( (phraseToText, sectionText) => ( (sectionText.length > 0) ?
+								 																					 ( (phraseToText.length > 0) ?
+																													 	 phraseToText + " " + sectionText :
+																														 sectionText) :
+																													 phraseToText),
+													"");
 	}
 
 	renderSection(section) {
@@ -277,29 +282,6 @@ export default class SmartSig extends Component {
 	}
 
 /*
-	findInPattern(pattern, pivotSection) {
-
-		pattern.map( (section) => {
-
-			if (section.key === pivotSection.key)
-				return section;
-
-			const matchingPattern = this.getPattern(section);
-
-			if (matchingPattern) {
-
-					const found = this.findInPattern(matchingPattern, pivotSection);
-
-					if (found)
- 						return found;
-			}
-
-		});
-
-		return null;
-	}
-*/
-
 	buildAutocomplete(pivotSection) {
 
 		const autoComplete = [];
@@ -316,14 +298,15 @@ export default class SmartSig extends Component {
 				phrase.push(curSection);
 
 				if (value.pattern)
-					phrase = phrase.concat(this.buildPhrase(value.pattern));
+					phrase = phrase.concat(this.buildPhrase(value.pattern, this.props.values));
 
-				autoComplete.push(this.renderPhraseToText(phrase));
+				autoComplete.push(this.renderPhraseToText(phrase, this.props.values));
 			});
 		}
 
 		return autoComplete;
 	}
+	*/
 
 	findSection(phrase, key) {
 
@@ -335,14 +318,10 @@ export default class SmartSig extends Component {
 
 	sectionHasPatterns(section) {
 
-		var hasPatterns = false;
-
-		if (section.values) {
-
-			section.values.map( (value) => { hasPatterns = hasPatterns || (typeof value.pattern !== 'undefined')} );
-		}
-
-		return hasPatterns;
+		return (section.values) ?
+						section.values.reduce( (hasPatterns, value) => (hasPatterns || (typeof value.pattern !== 'undefined') ),
+	 												 			  false) :
+						false;
 	}
 
 	getPivotSection(phrase) {
@@ -366,53 +345,47 @@ export default class SmartSig extends Component {
 		return null;
 	}
 
-	buildPhrase(pattern, pickerKey = null) {
+	static buildPhrase(pattern, values, pickerKey = null) {
 
-		let phrase = [];
+		function phraseReducer(accumulator, currentSection) {
 
-		pattern.map( (section) => {
-
-			let phraseSection = { ...section };
+			let phraseSection = { ...currentSection };
 
 			phraseSection.pickerKey = pickerKey;
 
-			phrase.push(phraseSection);
+			accumulator.push(phraseSection);
 
-			const matchingPattern = this.getPattern(section);
+			const matchingPattern = SmartSig.getMatchingPattern(currentSection, values);
 
 			if (matchingPattern) {
 
-					phrase = phrase.concat(this.buildPhrase(matchingPattern, section.key));
+					accumulator = accumulator.concat(SmartSig.buildPhrase(matchingPattern, values, phraseSection.key));
 			}
 
-		});
+			return accumulator;
+		}
 
-		return phrase;
+		return pattern.reduce(phraseReducer, []);
 	}
 
-	buildAutocompleteSection(section) {
-		var autoCompleteSection = { key : section.key, label : section.label, options: [] };
+	buildAutocompleteSection(section, values) {
 
-		section.values.map( (value) => {
+		return ( {
+			key : section.key,
+			label : section.label,
+			options: section.values.map( (currentValue) => {
 
-			var curOption = { value: value.value };
-			var curSection = { ...section };
-			let phrase     = [];
+									var   fixedValues = { ...values };
+									const newPattern  = [ section ];
 
-			curSection.values = [ value ];
-			curSection.type   = curSection.type === "hidden" ? "hidden" : "fixed";
+									fixedValues[section.key] = currentValue.value;
 
-			phrase.push(curSection);
-
-			if (value.pattern)
-				phrase = phrase.concat(this.buildPhrase(value.pattern));
-
-			curOption.label = this.renderPhraseToText(phrase);
-
-			autoCompleteSection.options.push(curOption);
+									return {
+										value: currentValue.value,
+										label: this.renderPhraseToText(SmartSig.buildPhrase(newPattern, fixedValues), fixedValues),
+									}
+							})
 		});
-
-		return autoCompleteSection;
 	}
 
 	renderAutocompleteOption(section, option) {
@@ -440,7 +413,7 @@ export default class SmartSig extends Component {
 		);
 	}
 
-	renderAutocomplete(phrase) {
+	renderAutocomplete(phrase, values) {
 
 		let autoComplete = []
 		const pivotSection = this.getPivotSection(phrase);
@@ -448,12 +421,12 @@ export default class SmartSig extends Component {
 		// Does the current selection have values... start with this
 		if (this.state.focusSection.values)
 		{
-			autoComplete.push(this.buildAutocompleteSection(this.state.focusSection));
+			autoComplete.push(this.buildAutocompleteSection(this.state.focusSection, values));
 		}
 
 		if (pivotSection &&
 			  (pivotSection.key !== this.state.focusSection.key) ) {
-			autoComplete.push(this.buildAutocompleteSection(pivotSection));
+			autoComplete.push(this.buildAutocompleteSection(pivotSection, values));
 		}
 
 		return (
@@ -465,7 +438,7 @@ export default class SmartSig extends Component {
 
 	render() {
 
-		const phrase = this.buildPhrase(this.props.pattern);
+		const phrase = SmartSig.buildPhrase(this.props.pattern, this.props.values);
 
 		let output = [];
 
@@ -474,12 +447,13 @@ export default class SmartSig extends Component {
 				{ this.renderPhrase(phrase) }
 			</SmartSigControl>);
 
+		// Show the popup if one of our fields has focus.
 		if (this.state.focusSection) {
 
 				output.push(<Popup key="autocompletePopup"
 													 onMouseEnter={ () => this.setIgnoreBlur(true) }
 													 onMouseLeave={ () => this.setIgnoreBlur(false) }>
-											{ this.renderAutocomplete(phrase) }
+											{ this.renderAutocomplete(phrase, this.props.values) }
 										</Popup>);
 		}
 
