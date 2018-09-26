@@ -99,6 +99,11 @@ class SmartSigInput extends Component {
   }
 }
 
+export const TYPE_LABEL   = "label";
+export const TYPE_NUMERIC = "numeric";
+export const TYPE_OPTION  = "option";
+export const TYPE_STATIC  = "static";
+
 export default class SmartSig extends Component {
 
 	constructor(props) {
@@ -108,6 +113,45 @@ export default class SmartSig extends Component {
 		 							 forceFocusSection: null};
 
   }
+
+
+	static Pattern(pattern, parent = null) {
+
+		if (Array.isArray(pattern))
+			return pattern.map( (item) => SmartSig.Pattern(item));
+
+		if (typeof pattern === 'string')
+			return {
+				type:  TYPE_LABEL,
+				value: pattern
+			}
+
+		return pattern;
+	}
+
+	static Field(fieldName, type) {
+
+		if (Array.isArray(type)) {
+			return {
+					type: TYPE_OPTION,
+					fieldKey: fieldName,
+					options: type.map( (item) => SmartSig.Pattern(item, fieldName))
+				}
+			}
+
+		return {
+				type:     type,
+				fieldKey: fieldName
+		}
+	}
+	static Optional(fieldName, pattern) {
+
+		return {
+				type: "optional",
+				pattern: pattern
+		}
+
+	}
 
 	setIgnoreBlur(ignore) {
 		this._ignoreBlur = ignore
@@ -233,13 +277,14 @@ export default class SmartSig extends Component {
 
 		switch (section.type) {
 
-			case "option":
+			case TYPE_NUMERIC:
+			case TYPE_OPTION:
 
 				sectionOutput.push(
-					<SmartSigInput key={section.key}
+					<SmartSigInput key={section.fieldKey}
 								 type="text"
-								 forceFocus={ this.state.forceFocusSection === section.key}
-								 value={this.props.values[section.key]}
+								 forceFocus={ this.state.forceFocusSection === section.fieldKey}
+								 value={this.props.values[section.fieldKey]}
 								 onBlur={ this.onBlurField.bind(this, section) }
 								 onFocus={ this.onFocusField.bind(this, section) }
 								 onKeyDown={ this.handleKeyDown.bind(this) }
@@ -248,8 +293,12 @@ export default class SmartSig extends Component {
 
 				break;
 
-			case "label":
-				sectionOutput.push(<Label key={section.key}>{section.label}</Label>);
+			case TYPE_LABEL:
+				sectionOutput.push(<Label key={section.key}>{section.value}</Label>);
+				break;
+
+			case TYPE_STATIC:
+				sectionOutput.push(<Label key={section.key}>{this.props.values[section.fieldKey]}</Label>);
 				break;
 
 			case "field":
@@ -279,33 +328,6 @@ export default class SmartSig extends Component {
 
 		return phrase.map( (section) => this.renderSection(section) );
 	}
-
-/*
-	buildAutocomplete(pivotSection) {
-
-		const autoComplete = [];
-
-		if (pivotSection.values) {
-			pivotSection.values.map( (value) => {
-
-				var curSection = { ...pivotSection };
-				let phrase     = [];
-
-				curSection.values = [ value ];
-				curSection.type   = curSection.type === "hidden" ? "hidden" : "fixed";
-
-				phrase.push(curSection);
-
-				if (value.pattern)
-					phrase = phrase.concat(this.buildPhrase(value.pattern, this.props.values));
-
-				autoComplete.push(this.renderPhraseToText(phrase, this.props.values));
-			});
-		}
-
-		return autoComplete;
-	}
-	*/
 
 	findSection(phrase, key) {
 
@@ -350,16 +372,16 @@ export default class SmartSig extends Component {
 
 			let phraseSection = { ...currentSection };
 
-			phraseSection.pickerKey = pickerKey;
-
 			accumulator.push(phraseSection);
 
+/*
 			const matchingPattern = SmartSig.getMatchingPattern(currentSection, values);
 
 			if (matchingPattern) {
 
 					accumulator = accumulator.concat(SmartSig.buildPhrase(matchingPattern, values, phraseSection.key));
 			}
+*/
 
 			return accumulator;
 		}
