@@ -318,10 +318,6 @@ class SmartSigInput extends Component {
   }
 }
 */
-export const TYPE_LABEL   = "label";
-export const TYPE_NUMERIC = "numeric";
-export const TYPE_OPTION  = "option";
-export const TYPE_STATIC  = "static";
 
 export const TYPE_LABEL   = "label";
 export const TYPE_NUMERIC = "numeric";
