@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import styled from 'styled-components'
 
 import AutosizeInput from 'react-input-autosize';
@@ -61,6 +61,214 @@ const AutocompleteItem = styled.button`
 		color: white;
 	}
 `
+export class Field extends Component {
+	constructor(props) {
+    super(props);
+
+		// create a ref to store the textInput DOM element
+    this.textInput = React.createRef();
+  }
+
+	isEmpty() {
+		return false;
+	}
+
+	renderToText() {
+		return this.props.value;
+	}
+
+	render() {
+
+		// Remove the props that I am consuming
+		var { forceFocus, ...other } = this.props;
+
+		return (
+		      <StyledAutosizeInput
+		        type="text"
+		        innerRef={this.textInput}
+						inputClassName={this.isEmpty() ? "empty" : ""}
+					 	{ ...other }/>
+		    );
+  }
+}
+
+export class Pattern extends Component {
+	constructor(props) {
+    super(props);
+
+		this.renderToText = this.renderToText.bind(this);
+	}
+
+	renderToText() {
+
+		var text = "";
+
+		React.Children.forEach(this.props.children, (child) => {
+
+				if (typeof child === "string")
+					text += child;
+				else {
+					text += child.renderToText()
+				}
+			});
+
+		return text;
+	}
+
+	render() {
+
+		// wrap the labels
+		var renderedChildren = React.Children.map(this.props.children, (child) => {
+
+				if (typeof child === "string")
+					return (<Label>{child}</Label>);
+
+				return child;
+			})
+
+		// If this pattern is owned by an option, don't render the first element
+		if (this.props.optionOwner) {
+			renderedChildren.shift();
+		}
+
+		return (renderedChildren);
+  }
+
+}
+
+/**
+** Finds a match for a pattern within the children passed in.
+** Will find a <Pattern> object with the same value as the value passed in.
+** If no value is passed, the first pattern is returned.
+*/
+function findPattern(children, value = null) {
+
+	var foundPattern = null;
+
+	React.Children.forEach(children, (child) => {
+
+		if (child.type && child.type === Pattern) {
+
+			if (foundPattern === null) {
+
+				if ( !(value) ||
+							(child.props.value === value)) {
+
+					foundPattern = child;
+				}
+			}
+		}
+
+	})
+
+	return foundPattern;
+}
+
+function getPatterns(children, value = null) {
+
+	var foundPatterns = [];
+
+	React.Children.forEach(children, (child) => {
+
+		if (child.type && child.type === Pattern) {
+
+			foundPatterns.push(child);
+		}
+	});
+
+	return foundPatterns;
+}
+
+export class Option extends Component {
+	constructor(props) {
+    super(props);
+
+		// create a ref to store the textInput DOM element
+    this.textInput = React.createRef();
+
+		this.onBlurField = this.onBlurField.bind(this);
+		this.onFocusField = this.onFocusField.bind(this);
+		this.handleKeyDown = this.handleKeyDown.bind(this);
+
+		this.state = { popupOpened: false }
+	}
+
+	componentWillMount() {
+		this._ignoreBlur = false;
+	}
+
+	isEmpty() {
+		return false;
+	}
+
+	onBlurField(event) {
+
+		if (!this._ignoreBlur)
+			this.setState( {  popupOpened: false });
+	}
+	onFocusField(event) {
+
+		this.setState( {  popupOpened: true } );
+	}
+
+	handleKeyDown(event) {
+//    if (SmartSig.keyDownHandlers[event.key])
+//      SmartSig.keyDownHandlers[event.key].call(this, event)
+  }
+
+	renderToText() {
+		return this.props.value;
+	}
+
+	render() {
+
+		var patternToRender = React.cloneElement(findPattern(this.props.children, this.props.value),
+																						 { optionOwner : this });
+
+		var patternValue = patternToRender.props.value;
+		const patterns = getPatterns(this.props.children);
+
+		// Remove the props that I am consuming
+		var { children, forceFocus, ...other } = this.props;
+
+		return (
+
+					<Fragment>
+			      <StyledAutosizeInput
+			        type="text"
+			        innerRef={this.textInput}
+							onBlur={ this.onBlurField }
+							onFocus={ this.onFocusField }
+							onKeyDown={ this.handleKeyDown }
+							inputClassName={this.isEmpty() ? "empty" : ""}
+						 	{ ...other } />
+						{patternToRender}
+						{
+							(this.state.popupOpened) ?
+							<Popup>
+								<div>
+									<AutocompleteSectionHeader>{this.props.name}</AutocompleteSectionHeader>
+									<ul>
+										{
+											patterns.map( (pattern) => <li key={this.props.name + pattern.props.value}>
+																										<AutocompleteItem type="button"
+																											/*onClick={this.onAutocompleteClick.bind(this, section.key, option.value, returnKey)}*/>
+																											{ pattern.renderToText() }
+																										</AutocompleteItem>
+																								 </li>)
+										}
+									</ul>
+								</div>
+							</Popup> :
+							""
+							}
+						}
+					</Fragment>
+
+		    );
+  }
+
+}
 
 class SmartSigInput extends Component {
 	constructor(props) {
@@ -86,7 +294,7 @@ class SmartSigInput extends Component {
   render() {
 
 		// Remove the props that I am consuming
-		var { forceFocus, ...other } = this.props;
+		var { children, forceFocus, ...other } = this.props;
 
     // tell React that we want to associate the <input> ref
     // with the `textInput` that we created in the constructor
@@ -457,18 +665,29 @@ export default class SmartSig extends Component {
 
 	}
 
+
 	render() {
 
-		const phrase = SmartSig.buildPhrase(this.props.pattern, this.props.values);
+		//const phrase = SmartSig.buildPhrase(this.props.pattern, this.props.values);
 
+		let pattern = findPattern(this.props.children);
+
+
+		return (
+			<SmartSigControl>
+				{ pattern }
+			</SmartSigControl>);
+
+/*
 		let output = [];
 
 		output.push(
 			<SmartSigControl>
-				{ this.renderPhrase(phrase) }
+				{ $pattern }
 			</SmartSigControl>);
 
 		// Show the popup if one of our fields has focus.
+
 		if (this.state.focusSection) {
 
 				output.push(<Popup key="autocompletePopup"
@@ -479,5 +698,6 @@ export default class SmartSig extends Component {
 		}
 
 		return (output);
+*/
 	}
 }
