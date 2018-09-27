@@ -34,7 +34,7 @@ const ContentContainer = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
-  background-color: yellow;
+  background-color: #eee;
 `
 
 class App extends Component {

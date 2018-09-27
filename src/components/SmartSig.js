@@ -54,6 +54,7 @@ const AutocompleteItem = styled.button`
 	border: none;
 	font-size: 12px;
 	padding: 1em;
+	background-color: white;
 
 	:hover {
 		background-color: blue;
