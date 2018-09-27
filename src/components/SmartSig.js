@@ -70,14 +70,19 @@ export class Field extends Component {
   }
 
 	isEmpty() {
-		return false;
+
+		return ( !(this.props.value) || (this.props.value.length === 0));
 	}
 
 	renderToText() {
-		return this.props.value;
+		return this.isEmpty() ? "[ ]" : this.props.value;
 	}
 
 	render() {
+
+		if (this.props.renderToText) {
+			return this.renderToText();
+		}
 
 		// Remove the props that I am consuming
 		var { forceFocus, ...other } = this.props;
@@ -96,26 +101,24 @@ export class Pattern extends Component {
 	constructor(props) {
     super(props);
 
-		this.renderToText = this.renderToText.bind(this);
 	}
 
 	renderToText() {
 
-		var text = "";
+		return React.Children.map(this.props.children, (child) => {
 
-		React.Children.forEach(this.props.children, (child) => {
+				if (typeof child === 'string')
+					return child;
 
-				if (typeof child === "string")
-					text += child;
-				else {
-					text += child.renderToText()
-				}
+				return React.cloneElement(child, { renderToText : true })
 			});
-
-		return text;
 	}
 
 	render() {
+
+		if (this.props.renderToText) {
+			return this.renderToText();
+		}
 
 		// wrap the labels
 		var renderedChildren = React.Children.map(this.props.children, (child) => {
@@ -222,6 +225,10 @@ export class Option extends Component {
 
 	render() {
 
+		if (this.props.renderToText) {
+			return this.renderToText();
+		}
+
 		var patternToRender = React.cloneElement(findPattern(this.props.children, this.props.value),
 																						 { optionOwner : this });
 
@@ -253,15 +260,14 @@ export class Option extends Component {
 											patterns.map( (pattern) => <li key={this.props.name + pattern.props.value}>
 																										<AutocompleteItem type="button"
 																											/*onClick={this.onAutocompleteClick.bind(this, section.key, option.value, returnKey)}*/>
-																											{ pattern.renderToText() }
+																											{ React.cloneElement(pattern, { renderToText : true }) }
 																										</AutocompleteItem>
 																								 </li>)
 										}
 									</ul>
 								</div>
 							</Popup> :
-							""
-							}
+							""		
 						}
 					</Fragment>
 
@@ -270,6 +276,7 @@ export class Option extends Component {
 
 }
 
+/*
 class SmartSigInput extends Component {
 	constructor(props) {
     super(props);
@@ -307,7 +314,7 @@ class SmartSigInput extends Component {
     );
   }
 }
-
+*/
 export const TYPE_LABEL   = "label";
 export const TYPE_NUMERIC = "numeric";
 export const TYPE_OPTION  = "option";
@@ -318,49 +325,8 @@ export default class SmartSig extends Component {
 	constructor(props) {
     super(props);
 
-		this.state = { focusSection : null,
-		 							 forceFocusSection: null};
-
   }
 
-
-	static Pattern(pattern, parent = null) {
-
-		if (Array.isArray(pattern))
-			return pattern.map( (item) => SmartSig.Pattern(item));
-
-		if (typeof pattern === 'string')
-			return {
-				type:  TYPE_LABEL,
-				value: pattern
-			}
-
-		return pattern;
-	}
-
-	static Field(fieldName, type) {
-
-		if (Array.isArray(type)) {
-			return {
-					type: TYPE_OPTION,
-					fieldKey: fieldName,
-					options: type.map( (item) => SmartSig.Pattern(item, fieldName))
-				}
-			}
-
-		return {
-				type:     type,
-				fieldKey: fieldName
-		}
-	}
-	static Optional(fieldName, pattern) {
-
-		return {
-				type: "optional",
-				pattern: pattern
-		}
-
-	}
 
 	setIgnoreBlur(ignore) {
 		this._ignoreBlur = ignore
@@ -429,246 +395,7 @@ export default class SmartSig extends Component {
     },
   }
 
-	static getMatchingPattern(section, values) {
-
-		var matchingValue = (section.values ?
-												  section.values.find( (item) => { return (item.value === values[section.key]) } )
-												: null);
-
-
-		if (matchingValue && matchingValue.pattern) {
-
-			return matchingValue.pattern;
-		}
-
-		return null;
-	}
-
-	renderSectionToText(section, values) {
-
-		switch (section.type) {
-
-			case TYPE_LABEL:
-				  return section.value;
-
-      case TYPE_NUMERIC:
-      case TYPE_OPTION:
-      case TYPE_STATIC:
-
-				return ( ( (typeof values[section.fieldKey] !== 'undefined') &&
-								   (values[section.fieldKey].length > 0) ) ?
-				         values[section.fieldKey] :
-								 "[]" );
-
-			case "hidden":
-			default:
-				return "";
-		}
-	}
-
-	renderPhraseToText(phrase, values) {
-
-		return phrase.map((section) => this.renderSectionToText(section, values))
-				  			 .reduce( (phraseToText, sectionText) => ( (sectionText.length > 0) ?
-								 																					 ( (phraseToText.length > 0) ?
-																													 	 phraseToText + " " + sectionText :
-																														 sectionText) :
-																													 phraseToText),
-													"");
-	}
-
-	renderSection(section) {
-
-		let sectionOutput = [];
-
-		switch (section.type) {
-
-			case TYPE_NUMERIC:
-			case TYPE_OPTION:
-
-				sectionOutput.push(
-					<SmartSigInput key={section.fieldKey}
-								 type="text"
-								 forceFocus={ this.state.forceFocusSection === section.fieldKey}
-								 value={this.props.values[section.fieldKey]}
-								 onBlur={ this.onBlurField.bind(this, section) }
-								 onFocus={ this.onFocusField.bind(this, section) }
-								 onKeyDown={ this.handleKeyDown.bind(this) }
-								 onChange={ this.onChangeField.bind(this, section) }></SmartSigInput>);
-
-
-				break;
-
-			case TYPE_LABEL:
-				sectionOutput.push(<Label key={section.key}>{section.value}</Label>);
-				break;
-
-			case TYPE_STATIC:
-				sectionOutput.push(<Label key={section.key}>{this.props.values[section.fieldKey]}</Label>);
-				break;
-
-			case "field":
-				sectionOutput.push(<SmartSigInput key={section.key}
-							 				type="text"
-											forceFocus={ this.state.forceFocusSection === section.key}
-							 			 value={ this.props.values[section.key] }
-										 onBlur={ this.onBlurField.bind(this, section) }
-										 onFocus={ this.onFocusField.bind(this, section) }
-										 onKeyDown={ this.handleKeyDown.bind(this) }
-							 	  onChange={ this.onChangeField.bind(this, section) }></SmartSigInput>);
-				break;
-			case "hidden":
-			default:
-				break;
-		}
-
-		return (sectionOutput);
-
-	}
-
-
-	/**
-	*
-	*/
-	renderPhrase(phrase) {
-
-		return phrase.map( (section) => this.renderSection(section) );
-	}
-
-	findSection(phrase, key) {
-
-		if (key)
-			return (phrase.find( (phraseSection) => { return (phraseSection.key === key) } ));
-
-		return null;
-	}
-
-	sectionHasPatterns(section) {
-
-		return (section.values) ?
-						section.values.reduce( (hasPatterns, value) => (hasPatterns || (typeof value.pattern !== 'undefined') ),
-	 												 			  false) :
-						false;
-	}
-
-	getPivotSection(phrase) {
-
-		if (this.state.focusSection) {
-
-			const phraseFocusSection = this.findSection(phrase, this.state.focusSection.key);
-
-			if (phraseFocusSection) {
-
-				if (this.sectionHasPatterns(phraseFocusSection))
-					return phraseFocusSection;
-
-				if (phraseFocusSection.pickerKey)
-					return (this.findSection(phrase, phraseFocusSection.pickerKey));
-
-				return phraseFocusSection;
-			}
-		}
-
-		return null;
-	}
-
-	static buildPhrase(pattern, values, pickerKey = null) {
-
-		function phraseReducer(accumulator, currentSection) {
-
-			let phraseSection = { ...currentSection };
-
-			accumulator.push(phraseSection);
-
-/*
-			const matchingPattern = SmartSig.getMatchingPattern(currentSection, values);
-
-			if (matchingPattern) {
-
-					accumulator = accumulator.concat(SmartSig.buildPhrase(matchingPattern, values, phraseSection.key));
-			}
-*/
-
-			return accumulator;
-		}
-
-		return pattern.reduce(phraseReducer, []);
-	}
-
-	buildAutocompleteSection(section, values) {
-
-    switch (section.type) {
-      case TYPE_OPTION:
-    		return ( {
-    			key : section.fieldKey,
-    			label : section.label,
-    			options: section.options.map( (currentValue) => {
-
-    									var   fixedValues = { ...values };
-    									const newPattern  = [ section ];
-
-    									fixedValues[section.fieldKey] = currentValue[0].value;
-
-    									return {
-    										value: currentValue.value,
-    										label: this.renderPhraseToText(SmartSig.buildPhrase(newPattern, fixedValues), fixedValues),
-    									}
-    							})
-    		});
-      default:
-        return {};
-    }
-	}
-
-	renderAutocompleteOption(section, option) {
-
-		const returnKey = this.state.focusSection ? this.state.focusSection.key : section.key;
-
-		return (
-			<li key={section.key + option.value}>
-				<AutocompleteItem type="button"
-					onClick={this.onAutocompleteClick.bind(this, section.key, option.value, returnKey)}>
-					{option.label}
-				</AutocompleteItem>
-			</li>
-		)
-	}
-
-	renderAutocompleteSection(section) {
-		return (
-			<div key={section.key}>
-				<AutocompleteSectionHeader>{section.label}</AutocompleteSectionHeader>
-				<ul>
-					{ section.options ? section.options.map( (option) => this.renderAutocompleteOption(section, option)) : ''}
-				</ul>
-			</div>
-		);
-	}
-
-	renderAutocomplete(phrase, values) {
-
-		let autoComplete = []
-		const pivotSection = this.getPivotSection(phrase);
-
-		// Does the current selection have values... start with this
-		autoComplete.push(this.buildAutocompleteSection(this.state.focusSection, values));
-
-//		if (pivotSection &&
-//			  (pivotSection.key !== this.state.focusSection.key) ) {
-//			autoComplete.push(this.buildAutocompleteSection(pivotSection, values));
-//		}
-
-		return (
-			<Popup key="autocomplete">
-				{ autoComplete.map( (section) => this.renderAutocompleteSection(section))}
-			</Popup>);
-
-	}
-
-
 	render() {
-
-		//const phrase = SmartSig.buildPhrase(this.props.pattern, this.props.values);
 
 		let pattern = findPattern(this.props.children);
 
@@ -678,26 +405,5 @@ export default class SmartSig extends Component {
 				{ pattern }
 			</SmartSigControl>);
 
-/*
-		let output = [];
-
-		output.push(
-			<SmartSigControl>
-				{ $pattern }
-			</SmartSigControl>);
-
-		// Show the popup if one of our fields has focus.
-
-		if (this.state.focusSection) {
-
-				output.push(<Popup key="autocompletePopup"
-													 onMouseEnter={ () => this.setIgnoreBlur(true) }
-													 onMouseLeave={ () => this.setIgnoreBlur(false) }>
-											{ this.renderAutocomplete(phrase, this.props.values) }
-										</Popup>);
-		}
-
-		return (output);
-*/
 	}
 }
