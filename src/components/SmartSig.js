@@ -239,20 +239,17 @@ export default class SmartSig extends Component {
 
 		switch (section.type) {
 
-			case "option":
-			case "field":
+			case TYPE_LABEL:
+				  return section.value;
 
-				return ( ( (typeof values[section.key] !== 'undefined') &&
-								   (values[section.key].length > 0) ) ?
-				         values[section.key] :
+      case TYPE_NUMERIC:
+      case TYPE_OPTION:
+      case TYPE_STATIC:
+
+				return ( ( (typeof values[section.fieldKey] !== 'undefined') &&
+								   (values[section.fieldKey].length > 0) ) ?
+				         values[section.fieldKey] :
 								 "[]" );
-
-			case "fixed":
-
-				return (section.values[0].label);
-
-			case "label":
-				return (section.label);
 
 			case "hidden":
 			default:
@@ -391,22 +388,27 @@ export default class SmartSig extends Component {
 
 	buildAutocompleteSection(section, values) {
 
-		return ( {
-			key : section.key,
-			label : section.label,
-			options: section.values.map( (currentValue) => {
+    switch (section.type) {
+      case TYPE_OPTION:
+    		return ( {
+    			key : section.fieldKey,
+    			label : section.label,
+    			options: section.options.map( (currentValue) => {
 
-									var   fixedValues = { ...values };
-									const newPattern  = [ section ];
+    									var   fixedValues = { ...values };
+    									const newPattern  = [ section ];
 
-									fixedValues[section.key] = currentValue.value;
+    									fixedValues[section.fieldKey] = currentValue[0].value;
 
-									return {
-										value: currentValue.value,
-										label: this.renderPhraseToText(SmartSig.buildPhrase(newPattern, fixedValues), fixedValues),
-									}
-							})
-		});
+    									return {
+    										value: currentValue.value,
+    										label: this.renderPhraseToText(SmartSig.buildPhrase(newPattern, fixedValues), fixedValues),
+    									}
+    							})
+    		});
+      default:
+        return {};
+    }
 	}
 
 	renderAutocompleteOption(section, option) {
@@ -428,7 +430,7 @@ export default class SmartSig extends Component {
 			<div key={section.key}>
 				<AutocompleteSectionHeader>{section.label}</AutocompleteSectionHeader>
 				<ul>
-					{ section.options.map( (option) => this.renderAutocompleteOption(section, option))}
+					{ section.options ? section.options.map( (option) => this.renderAutocompleteOption(section, option)) : ''}
 				</ul>
 			</div>
 		);
@@ -440,15 +442,12 @@ export default class SmartSig extends Component {
 		const pivotSection = this.getPivotSection(phrase);
 
 		// Does the current selection have values... start with this
-		if (this.state.focusSection.values)
-		{
-			autoComplete.push(this.buildAutocompleteSection(this.state.focusSection, values));
-		}
+		autoComplete.push(this.buildAutocompleteSection(this.state.focusSection, values));
 
-		if (pivotSection &&
-			  (pivotSection.key !== this.state.focusSection.key) ) {
-			autoComplete.push(this.buildAutocompleteSection(pivotSection, values));
-		}
+//		if (pivotSection &&
+//			  (pivotSection.key !== this.state.focusSection.key) ) {
+//			autoComplete.push(this.buildAutocompleteSection(pivotSection, values));
+//		}
 
 		return (
 			<Popup key="autocomplete">
