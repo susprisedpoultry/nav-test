@@ -76,6 +76,7 @@ export class Field extends Component {
 
 	renderToText() {
 		return this.isEmpty() ? "[ ]" : this.props.value;
+
 	}
 
 	render() {
@@ -101,6 +102,7 @@ export class Pattern extends Component {
 	constructor(props) {
     super(props);
 
+
 	}
 
 	renderToText() {
@@ -112,6 +114,7 @@ export class Pattern extends Component {
 
 				return React.cloneElement(child, { renderToText : true })
 			});
+
 	}
 
 	render() {
@@ -119,6 +122,7 @@ export class Pattern extends Component {
 		if (this.props.renderToText) {
 			return this.renderToText();
 		}
+
 
 		// wrap the labels
 		var renderedChildren = React.Children.map(this.props.children, (child) => {
@@ -161,7 +165,6 @@ function findPattern(children, value = null) {
 				}
 			}
 		}
-
 	})
 
 	return foundPattern;
@@ -267,7 +270,7 @@ export class Option extends Component {
 									</ul>
 								</div>
 							</Popup> :
-							""		
+							""
 						}
 					</Fragment>
 
@@ -320,13 +323,17 @@ export const TYPE_NUMERIC = "numeric";
 export const TYPE_OPTION  = "option";
 export const TYPE_STATIC  = "static";
 
+export const TYPE_LABEL   = "label";
+export const TYPE_NUMERIC = "numeric";
+export const TYPE_OPTION  = "option";
+export const TYPE_STATIC  = "static";
+
 export default class SmartSig extends Component {
 
 	constructor(props) {
     super(props);
 
   }
-
 
 	setIgnoreBlur(ignore) {
 		this._ignoreBlur = ignore
@@ -398,7 +405,6 @@ export default class SmartSig extends Component {
 	render() {
 
 		let pattern = findPattern(this.props.children);
-
 
 		return (
 			<SmartSigControl>
