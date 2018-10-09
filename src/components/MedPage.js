@@ -40,7 +40,7 @@ export default class MedPage extends Component {
 				<SmartSig>
 					<Pattern>
 						Take <Field name="quantity" value={this.state.quantity} type={TYPE_NUMERIC} onChange={this.handleChange} />
-						<Option name="frequencyType" value={this.state.frequencyType} onChange={this.handleChange}>
+						<Option name="frequencyType" label="Frequency" value={this.state.frequencyType} onChange={this.handleChange}>
 							<Pattern value="once">once</Pattern>
 							<Pattern value="bid">twice a day</Pattern>
 							<Pattern value="every">every <Field name="frequencyStart" value={this.state.frequencyStart}/> days</Pattern>

@@ -61,6 +61,87 @@ const AutocompleteItem = styled.button`
 		color: white;
 	}
 `
+
+class AutocompleteInput extends Component {
+
+	constructor(props) {
+    super(props);
+
+		// create a ref to store the textInput DOM element
+    this.textInput = React.createRef();
+
+		this.onBlurField = this.onBlurField.bind(this);
+		this.onFocusField = this.onFocusField.bind(this);
+		this.handleKeyDown = this.handleKeyDown.bind(this);
+
+		this.state = { popupOpened: false }
+	}
+
+	componentWillMount() {
+		this._ignoreBlur = false;
+	}
+
+	isEmpty() {
+		return false;
+	}
+
+	onBlurField(event) {
+
+		if (!this._ignoreBlur)
+			this.setState( {  popupOpened: false });
+	}
+	onFocusField(event) {
+
+		this.setState( {  popupOpened: true } );
+	}
+
+	handleKeyDown(event) {
+//    if (SmartSig.keyDownHandlers[event.key])
+//      SmartSig.keyDownHandlers[event.key].call(this, event)
+  }
+
+	render() {
+
+		// Remove the props that I am consuming
+		var { children, forceFocus, ...other } = this.props;
+
+		return (
+
+					<Fragment>
+			      <StyledAutosizeInput
+			        type="text"
+			        innerRef={this.textInput}
+							onBlur={ this.onBlurField }
+							onFocus={ this.onFocusField }
+							onKeyDown={ this.handleKeyDown }
+							inputClassName={this.isEmpty() ? "empty" : ""}
+						 	{ ...other } />
+						{
+							(this.state.popupOpened) ?
+							<Popup>
+								<div>
+									<AutocompleteSectionHeader>{this.props.label}</AutocompleteSectionHeader>
+									<ul>
+										{
+											this.props.patterns.map( (pattern) => <li key={this.props.name + pattern.props.value}>
+																										<AutocompleteItem type="button"
+																											/*onClick={this.onAutocompleteClick.bind(this, section.key, option.value, returnKey)}*/>
+																											{ React.cloneElement(pattern, { renderToText : true }) }
+																										</AutocompleteItem>
+																								 </li>)
+										}
+									</ul>
+								</div>
+							</Popup> :
+							""
+						}
+					</Fragment>
+
+		    );
+  }
+}
+
+
 export class Field extends Component {
 	constructor(props) {
     super(props);
@@ -242,82 +323,15 @@ export class Option extends Component {
 		var { children, forceFocus, ...other } = this.props;
 
 		return (
-
 					<Fragment>
-			      <StyledAutosizeInput
-			        type="text"
-			        innerRef={this.textInput}
-							onBlur={ this.onBlurField }
-							onFocus={ this.onFocusField }
-							onKeyDown={ this.handleKeyDown }
-							inputClassName={this.isEmpty() ? "empty" : ""}
-						 	{ ...other } />
+						<AutocompleteInput patterns={patterns} { ...other } />
 						{patternToRender}
-						{
-							(this.state.popupOpened) ?
-							<Popup>
-								<div>
-									<AutocompleteSectionHeader>{this.props.name}</AutocompleteSectionHeader>
-									<ul>
-										{
-											patterns.map( (pattern) => <li key={this.props.name + pattern.props.value}>
-																										<AutocompleteItem type="button"
-																											/*onClick={this.onAutocompleteClick.bind(this, section.key, option.value, returnKey)}*/>
-																											{ React.cloneElement(pattern, { renderToText : true }) }
-																										</AutocompleteItem>
-																								 </li>)
-										}
-									</ul>
-								</div>
-							</Popup> :
-							""
-						}
 					</Fragment>
 
 		    );
   }
 
 }
-
-/*
-class SmartSigInput extends Component {
-	constructor(props) {
-    super(props);
-    // create a ref to store the textInput DOM element
-    this.textInput = React.createRef();
-    this.focus = this.focus.bind(this);
-  }
-
-  focus() {
-    // Explicitly focus the text input using the raw DOM API
-    // Note: we're accessing "current" to get the DOM node
-    this.textInput.current.focus();
-  }
-
-	componentDidUpdate(prevProps, prevState, snapshot) {
-
-		if (this.props.forceFocus) {
-			this.focus();
-		}
-
-	}
-  render() {
-
-		// Remove the props that I am consuming
-		var { children, forceFocus, ...other } = this.props;
-
-    // tell React that we want to associate the <input> ref
-    // with the `textInput` that we created in the constructor
-    return (
-      <StyledAutosizeInput
-        type="text"
-        innerRef={this.textInput}
-				inputClassName={this.props.value.length === 0 ? "empty" : ""}
-			 	{ ...other }/>
-    );
-  }
-}
-*/
 
 export const TYPE_LABEL   = "label";
 export const TYPE_NUMERIC = "numeric";
